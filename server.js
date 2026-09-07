@@ -6,6 +6,11 @@ const fs = require('fs');
 
 const app = express();
 app.use(cors());
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
 app.use(express.json());
 
 // تحديد مسار الأداة حسب نظام التشغيل (Windows أو Linux فالسيرفر)
