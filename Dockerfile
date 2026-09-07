@@ -1,13 +1,15 @@
 FROM node:18-slim
 
-# تثبيت ffmpeg و python3 (الضروريان لـ yt-dlp)
+# تثبيت الأدوات الأساسية ffmpeg و python3 و curl
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
     curl \
-    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp \
     && rm -rf /var/lib/apt/lists/*
+
+# تحميل أحدث إصدار من yt-dlp وإعطائه صلاحيات التنفيذ
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
+    chmod +x /usr/local/bin/yt-dlp
 
 WORKDIR /app
 
