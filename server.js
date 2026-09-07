@@ -16,7 +16,6 @@ app.use(express.json());
 
 const isWindows = process.platform === 'win32';
 const ytdlpPath = isWindows ? path.join(__dirname, 'yt-dlp.exe') : 'yt-dlp';
-const ffmpegPath = isWindows ? path.join(__dirname, 'ffmpeg.exe') : 'ffmpeg';
 
 app.get('/download', (req, res) => {
     const videoUrl = req.query.url;
@@ -31,13 +30,17 @@ app.get('/download', (req, res) => {
     const outputFilename = `file_${Date.now()}.${fileExt}`;
     const outputPath = path.join(__dirname, outputFilename);
 
-    // إضافة خيارات تجاوز الحظر وتحديد مشغلات الموبايل مع الجودة المناسبة
-    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --extractor-args "youtube:player_client=ios,android" --no-check-certificates`;
+    // استخدام android_vr و tv_embedded لتجاوز حظر 429 و 403
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --extractor-args "youtube:player_client=android_vr,tv_embedded" --no-check-certificates`;
 
     if (isAudio) {
-        command += ` -x --audio-format mp3 --ffmpeg-location "${ffmpegPath}"`;
+        command += ` -x --audio-format mp3`;
     } else {
-        command += ` -f "b[ext=mp4]/b" --ffmpeg-location "${ffmpegPath}"`;
+        command += ` -f "b[ext=mp4]/b"`;
+    }
+
+    if (isWindows) {
+        command += ` --ffmpeg-location "${path.join(__dirname, 'ffmpeg.exe')}"`;
     }
 
     console.log(`Executing command: ${command}`);
