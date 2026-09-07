@@ -39,7 +39,7 @@
     status.innerText = 'جاري تحويل ومعالجة الملف عبر السيرفر... انتظر بضع ثوانٍ';
 
     try {
-      const downloadUrl = `http://localhost:3000/download?url=${encodeURIComponent(url)}&format=${format}`;
+      const downloadUrl = `https://yt-downloader-n7jb.onrender.com/download?url=${encodeURIComponent(url)}&format=${format}`;
       const response = await fetch(downloadUrl);
 
       if (!response.ok) throw new Error('فشل التحميل');
