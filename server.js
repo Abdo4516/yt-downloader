@@ -31,8 +31,8 @@ app.get('/download', (req, res) => {
     const outputFilename = `file_${Date.now()}.${fileExt}`;
     const outputPath = path.join(__dirname, outputFilename);
 
-    // إضافة خيارات تجاوز الحظر وتحديد طريقة التحميل
-    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --no-check-certificates --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"`;
+    // إضافة خيارات تجاوز الحظر وتحديد مشغلات الموبايل مع الجودة المناسبة
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --extractor-args "youtube:player_client=ios,android" --no-check-certificates`;
 
     if (isAudio) {
         command += ` -x --audio-format mp3 --ffmpeg-location "${ffmpegPath}"`;
@@ -58,7 +58,6 @@ app.get('/download', (req, res) => {
             if (err) {
                 console.error(`Download Response Error: ${err.message}`);
             }
-            // حذف الملف بعد تنزيله لتوفير المساحة
             fs.unlink(outputPath, (unlinkErr) => {
                 if (unlinkErr) console.error(`Unlink Error: ${unlinkErr}`);
             });
