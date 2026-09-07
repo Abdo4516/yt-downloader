@@ -9,11 +9,11 @@ app.use(cors());
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 app.use(express.json());
 
-// تحديد مسار الأداة حسب نظام التشغيل (Windows أو Linux فالسيرفر)
 const isWindows = process.platform === 'win32';
 const ytdlpPath = isWindows ? path.join(__dirname, 'yt-dlp.exe') : 'yt-dlp';
 const ffmpegPath = isWindows ? path.join(__dirname, 'ffmpeg.exe') : 'ffmpeg';
@@ -31,31 +31,42 @@ app.get('/download', (req, res) => {
     const outputFilename = `file_${Date.now()}.${fileExt}`;
     const outputPath = path.join(__dirname, outputFilename);
 
-    let command = `"${ytdlpPath}" "${videoUrl}" -o "${outputPath}" --ffmpeg-location "${ffmpegPath}"`;
+    // إضافة خيارات تجاوز الحظر وتحديد طريقة التحميل
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --no-check-certificates --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"`;
 
     if (isAudio) {
-        command += ' -x --audio-format mp3';
+        command += ` -x --audio-format mp3 --ffmpeg-location "${ffmpegPath}"`;
     } else {
-        command += ' -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"';
+        command += ` -f "b[ext=mp4]/b" --ffmpeg-location "${ffmpegPath}"`;
     }
 
-    console.log('جاري معالجة التحميل...');
+    console.log(`Executing command: ${command}`);
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error('خطأ أثناء المعالجة:', error);
-            return res.status(500).send('حدث خطأ أثناء تحميل الفيديو');
+            console.error(`Exec Error: ${error.message}`);
+            console.error(`Stderr: ${stderr}`);
+            return res.status(500).send(`فشل التحميل: ${stderr || error.message}`);
         }
 
-        res.download(outputPath, `download.${fileExt}`, () => {
-            if (fs.existsSync(outputPath)) {
-                fs.unlinkSync(outputPath);
+        if (!fs.existsSync(outputPath)) {
+            console.error('File not found after execution.');
+            return res.status(500).send('لم يتم العثور على الملف بعد المعالجة');
+        }
+
+        res.download(outputPath, outputFilename, (err) => {
+            if (err) {
+                console.error(`Download Response Error: ${err.message}`);
             }
+            // حذف الملف بعد تنزيله لتوفير المساحة
+            fs.unlink(outputPath, (unlinkErr) => {
+                if (unlinkErr) console.error(`Unlink Error: ${unlinkErr}`);
+            });
         });
     });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
