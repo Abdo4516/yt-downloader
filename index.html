@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Downloader Local</title>
+  <style>
+    body { font-family: system-ui; background: #121212; color: #fff; display: flex; justify-content: center; padding-top: 50px; }
+    .box { background: #1e1e1e; padding: 30px; border-radius: 10px; width: 400px; text-align: center; }
+    input { width: 100%; padding: 10px; margin: 15px 0; box-sizing: border-box; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 5px; }
+    .btns { display: flex; gap: 10px; }
+    button { flex: 1; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    .mp3 { background: #1ed760; }
+    .mp4 { background: #007acc; color: #fff; }
+    #status { margin-top: 15px; color: #aaa; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>مُنزل فيديوهات يوتيوب المحلي</h2>
+  <input type="text" id="url" placeholder="ضع رابط الفيديو هنا...">
+  <div class="btns">
+    <button class="mp3" onclick="startDownload('mp3')">تحميل MP3 🎵</button>
+    <button class="mp4" onclick="startDownload('mp4')">تحميل MP4 🎬</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<script>
+  async function startDownload(format) {
+    const url = document.getElementById('url').value.trim();
+    const status = document.getElementById('status');
+
+    if (!url) {
+      alert('أدخل رابط يوتيوب أولاً!');
+      return;
+    }
+
+    status.innerText = 'جاري تحويل ومعالجة الملف عبر السيرفر... انتظر بضع ثوانٍ';
+
+    try {
+      const downloadUrl = `http://localhost:3000/download?url=${encodeURIComponent(url)}&format=${format}`;
+      const response = await fetch(downloadUrl);
+
+      if (!response.ok) throw new Error('فشل التحميل');
+
+      const blob = await response.blob();
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `download.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      status.innerText = 'تم التنزيل بنجاح!';
+    } catch (err) {
+      status.innerText = 'حدث خطأ أثناء معالجة الملف، تأكد من تشغيل السيرفر ورابط الفيديو.';
+    }
+  }
+</script>
+
+</body>
+</html>
