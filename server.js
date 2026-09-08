@@ -31,7 +31,7 @@ app.get('/download', (req, res) => {
     const outputPath = path.join(__dirname, outputFilename);
     const cookiesPath = path.join(__dirname, 'cookies.txt');
 
-    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --no-check-certificates`;
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --extractor-args "youtube:player_client=android,ios" --no-check-certificates`;
 
     if (fs.existsSync(cookiesPath)) {
         command += ` --cookies "${cookiesPath}"`;
