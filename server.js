@@ -31,7 +31,11 @@ app.get('/download', (req, res) => {
     const outputPath = path.join(__dirname, outputFilename);
     const cookiesPath = path.join(__dirname, 'cookies.txt');
 
-    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --cookies "${cookiesPath}" --no-check-certificates`;
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --no-check-certificates`;
+
+    if (fs.existsSync(cookiesPath)) {
+        command += ` --cookies "${cookiesPath}"`;
+    }
 
     if (isAudio) {
         command += ` -x --audio-format mp3`;
