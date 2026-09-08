@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const ytdl = require('@distube/ytdl-core');
+const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -12,44 +12,63 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/download', async (req, res) => {
+app.use(express.json());
+
+const isWindows = process.platform === 'win32';
+const ytdlpPath = isWindows ? path.join(__dirname, 'yt-dlp.exe') : 'yt-dlp';
+
+app.get('/download', (req, res) => {
     const videoUrl = req.query.url;
     const format = req.query.format || 'mp3';
 
-    if (!videoUrl || !ytdl.validateURL(videoUrl)) {
-        return res.status(400).send('الرابط غير صالح');
+    if (!videoUrl) {
+        return res.status(400).send('الرابط مطلوب');
     }
 
-    try {
-        const isAudio = format === 'mp3';
-        const fileExt = isAudio ? 'mp3' : 'mp4';
-        const outputFilename = `file_${Date.now()}.${fileExt}`;
-        const outputPath = path.join(__dirname, outputFilename);
+    const isAudio = format === 'mp3';
+    const fileExt = isAudio ? 'mp3' : 'mp4';
+    const outputFilename = `file_${Date.now()}.${fileExt}`;
+    const outputPath = path.join(__dirname, outputFilename);
+    const cookiesPath = path.join(__dirname, 'cookies.txt');
 
-        const stream = ytdl(videoUrl, {
-            filter: isAudio ? 'audioonly' : 'videoandaudio',
-            quality: 'highest'
-        });
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --cookies "${cookiesPath}" --no-check-certificates`;
 
-        const writeStream = fs.createWriteStream(outputPath);
-        stream.pipe(writeStream);
+    if (isAudio) {
+        command += ` -x --audio-format mp3`;
+    } else {
+        command += ` -f "b[ext=mp4]/b"`;
+    }
 
-        writeStream.on('finish', () => {
-            res.download(outputPath, outputFilename, () => {
-                fs.unlink(outputPath, () => {});
+    if (isWindows) {
+        command += ` --ffmpeg-location "${path.join(__dirname, 'ffmpeg.exe')}"`;
+    }
+
+    console.log(`Executing command: ${command}`);
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Exec Error: ${error.message}`);
+            console.error(`Stderr: ${stderr}`);
+            return res.status(500).send(`فشل التحميل: ${stderr || error.message}`);
+        }
+
+        if (!fs.existsSync(outputPath)) {
+            console.error('File not found after execution.');
+            return res.status(500).send('لم يتم العثور على الملف بعد المعالجة');
+        }
+
+        res.download(outputPath, outputFilename, (err) => {
+            if (err) {
+                console.error(`Download Response Error: ${err.message}`);
+            }
+            fs.unlink(outputPath, (unlinkErr) => {
+                if (unlinkErr) console.error(`Unlink Error: ${unlinkErr}`);
             });
         });
-
-        stream.on('error', (err) => {
-            console.error('Stream Error:', err);
-            res.status(500).send('حدث خطأ أثناء التحميل');
-        });
-
-    } catch (err) {
-        console.error('Catch Error:', err);
-        res.status(500).send('فشل في معالجة الفيديو');
-    }
+    });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
