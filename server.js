@@ -31,7 +31,8 @@ app.get('/download', (req, res) => {
     const outputPath = path.join(__dirname, outputFilename);
     const cookiesPath = path.join(__dirname, 'cookies.txt');
 
-    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --extractor-args "youtube:player_client=android,ios" --no-check-certificates`;
+    // استخدام web_creator و mweb لدعم التنزيل وتجاوز الحظر مع الكوكيز
+    let command = `${ytdlpPath} "${videoUrl}" -o "${outputPath}" --extractor-args "youtube:player_client=web_creator,mweb" --no-check-certificates`;
 
     if (fs.existsSync(cookiesPath)) {
         command += ` --cookies "${cookiesPath}"`;
@@ -40,7 +41,7 @@ app.get('/download', (req, res) => {
     if (isAudio) {
         command += ` -x --audio-format mp3`;
     } else {
-        command += ` -f "b[ext=mp4]/b"`;
+        command += ` -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"`;
     }
 
     if (isWindows) {
